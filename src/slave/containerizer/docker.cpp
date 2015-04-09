@@ -812,6 +812,10 @@ Future<pid_t> DockerContainerizerProcess::_____launch(
 }
 
 
+Future<bool> _true() {
+  return true;
+}
+
 Future<bool> DockerContainerizerProcess::______launch(
     const ContainerID& containerId,
     pid_t pid)
@@ -831,7 +835,8 @@ Future<bool> DockerContainerizerProcess::______launch(
   // TODO(benh): Check failure of Docker::logs.
   docker->logs(container->name(), container->directory);
 
-  return true;
+  return __update(containerId, container->resources, pid)
+      .then(lambda::bind(_true));
 }
 
 
@@ -966,6 +971,35 @@ Future<Nothing> DockerContainerizerProcess::__update(
     LOG(INFO) << "Updated 'cpu.shares' to " << shares
               << " at " << path::join(cpuHierarchy.get(), cpuCgroup.get())
               << " for container " << containerId;
+
+    // Set cfs quota if enabled.
+    if (flags.cgroups_enable_cfs) {
+      write = cgroups::cpu::cfs_period_us(
+          cpuHierarchy.get(),
+          cpuCgroup.get(),
+          CPU_CFS_PERIOD);
+
+      if (write.isError()) {
+        return Failure("Failed to update 'cpu.cfs_period_us': " +
+            write.error());
+      }
+
+      Duration quota = std::max(CPU_CFS_PERIOD * cpuShares, MIN_CPU_CFS_QUOTA);
+
+      write = cgroups::cpu::cfs_quota_us(
+          cpuHierarchy.get(),
+          cpuCgroup.get(),
+          quota);
+
+      if (write.isError()) {
+        return Failure("Failed to update 'cpu.cfs_quota_us': " + write.error());
+      }
+
+      LOG(INFO) << "Updated 'cpu.cfs_period_us' to " << CPU_CFS_PERIOD
+                << " and 'cpu.cfs_quota_us' to " << quota
+                << " (cpus " << cpuShares << ")"
+                << " for container " << containerId;
+    }
   }
 
   // Now determine the cgroup for the 'memory' subsystem.
