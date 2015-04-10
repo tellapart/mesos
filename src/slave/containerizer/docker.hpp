@@ -55,8 +55,7 @@ public:
   // This is only public for tests.
   DockerContainerizer(
       const Flags& flags,
-      process::Shared<Docker> docker,
-      const std::vector<Owned<Isolator>> isolators);
+      process::Shared<Docker> docker);
 
   virtual ~DockerContainerizer();
 

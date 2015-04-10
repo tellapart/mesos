@@ -86,11 +86,9 @@ class DockerContainerizerProcess
 public:
   DockerContainerizerProcess(
       const Flags& _flags,
-      Shared<Docker> _docker,
-      const vector<Owned<Isolator>> isolators_)
+      Shared<Docker> _docker)
     : flags(_flags),
-      docker(_docker),
-      isolators(isolators_) {}
+      docker(_docker) {}
 
   virtual process::Future<Nothing> recover(
       const Option<state::SlaveState>& state);
@@ -224,8 +222,6 @@ private:
   const Flags flags;
 
   Shared<Docker> docker;
-
-  const vector<Owned<Isolator>> isolators;
 
   struct Container
   {
@@ -441,19 +437,15 @@ Try<DockerContainerizer*> DockerContainerizer::create(const Flags& flags)
     return Error(docker.error());
   }
 
-  vector<Owned<Isolator>> isolators;
-
-
-  return new DockerContainerizer(flags, Shared<Docker>(docker.get()), isolators);
+  return new DockerContainerizer(flags, Shared<Docker>(docker.get()));
 }
 
 
 DockerContainerizer::DockerContainerizer(
     const Flags& flags,
-    Shared<Docker> docker,
-    const std::vector<Owned<Isolator>> isolators)
+    Shared<Docker> docker)
 {
-  process = new DockerContainerizerProcess(flags, docker, isolators);
+  process = new DockerContainerizerProcess(flags, docker);
   spawn(process);
 }
 
@@ -1075,7 +1067,6 @@ Future<pid_t> DockerContainerizerProcess::___launch(
   return s.get().pid();
 }
 
-
 process::Future<bool> DockerContainerizerProcess::launch(
     const ContainerID& containerId,
     const TaskInfo& taskInfo,
@@ -1130,10 +1121,12 @@ process::Future<bool> DockerContainerizerProcess::launch(
       taskInfo.task_id(),
       TaskState::TASK_STAGING,
       TaskStatus::SOURCE_SLAVE,
-      "Pulling...",
+      "Pulling docker image...",
       None(),
       executorInfo.executor_id()
   );
+
+
 
   return fetch(containerId)
     .then(defer(self(), &Self::_launch, containerId, slave, pullMessage))
@@ -1279,12 +1272,6 @@ Future<Nothing> DockerContainerizerProcess::__update(
     pid_t pid)
 {
 #ifdef __linux__
-  static Try<Isolator *> cpuIsolator = CgroupsCpushareIsolatorProcess::create(flags);
-  if (cpuIsolator.isError()) {
-    return Failure("Could not create cpu isolator: " + cpuIsolator.error());
-  }
-  static Owned<Isolator> cpuIso(cpuIsolator.get());
-
   // Determine the the cgroups hierarchies where the 'cpu' and
   // 'memory' subsystems are mounted (they may be the same). Note that
   // we make these static so we can reuse the result for subsequent
@@ -1304,7 +1291,6 @@ Future<Nothing> DockerContainerizerProcess::__update(
                    memoryHierarchy.error());
   }
 
-  /*
   // We need to find the cgroup(s) this container is currently running
   // in for both the hierarchy with the 'cpu' subsystem attached and
   // the hierarchy with the 'memory' subsystem attached so we can
@@ -1367,7 +1353,7 @@ Future<Nothing> DockerContainerizerProcess::__update(
                 << " for container " << containerId;
     }
   }
-  */
+
   // Now determine the cgroup for the 'memory' subsystem.
   Result<string> memoryCgroup = cgroups::memory::cgroup(pid);
 
@@ -1430,9 +1416,6 @@ Future<Nothing> DockerContainerizerProcess::__update(
                 << " for container " << containerId;
     }
   }
-
-  return cpuIso->update(containerId, _resources);
-
 #endif // __linux__
 
   return Nothing();
