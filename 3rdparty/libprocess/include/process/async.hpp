@@ -46,7 +46,7 @@ Future<Nothing> async(
       ENUM_BINARY_PARAMS(N, A, a),                                      \
       typename boost::enable_if<boost::is_void<typename lambda::result_of<F(ENUM_PARAMS(N, A))>::type> >::type* = NULL); // NOLINT(whitespace/line_length)
 
-  REPEAT_FROM_TO(1, 11, TEMPLATE, _) // Args A0 -> A9.
+  REPEAT_FROM_TO(1, 14, TEMPLATE, _) // Args A0 -> A9.
 #undef TEMPLATE
 
 
@@ -104,7 +104,7 @@ private:
     return Nothing();                                                   \
   }
 
-  REPEAT_FROM_TO(1, 11, TEMPLATE, _) // Args A0 -> A9.
+  REPEAT_FROM_TO(1, 14, TEMPLATE, _) // Args A0 -> A9.
 #undef TEMPLATE
 };
 
@@ -137,7 +137,7 @@ private:
       ENUM_BINARY_PARAMS(N, A, a),                                      \
       typename boost::enable_if<boost::is_void<typename lambda::result_of<F(ENUM_PARAMS(N, A))>::type> >::type*); // NOLINT(whitespace/line_length)
 
-  REPEAT_FROM_TO(1, 11, TEMPLATE, _) // Args A0 -> A9.
+  REPEAT_FROM_TO(1, 14, TEMPLATE, _) // Args A0 -> A9.
 #undef TEMPLATE
 
   AsyncExecutor()
@@ -203,7 +203,7 @@ private:
     return dispatch(process, method, f, ENUM_PARAMS(N, a), (void*) NULL); \
   }
 
-  REPEAT_FROM_TO(1, 11, TEMPLATE, _) // Args A0 -> A9.
+  REPEAT_FROM_TO(1, 14, TEMPLATE, _) // Args A0 -> A9.
 #undef TEMPLATE
 
   AsyncExecutorProcess* process;
@@ -248,7 +248,7 @@ Future<Nothing> async(
     return AsyncExecutor().execute(f, ENUM_PARAMS(N, a));               \
   }
 
-  REPEAT_FROM_TO(1, 11, TEMPLATE, _) // Args A0 -> A9.
+  REPEAT_FROM_TO(1, 14, TEMPLATE, _) // Args A0 -> A9.
 #undef TEMPLATE
 
 } // namespace process {
