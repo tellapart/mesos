@@ -389,7 +389,7 @@ public:
     return then(std::tr1::function<X(const T&)>(b));                    \
   }
 
-  REPEAT_FROM_TO(1, 11, TEMPLATE, _) // Args A0 -> A9.
+  REPEAT_FROM_TO(1, 14, TEMPLATE, _) // Args A0 -> A9.
 #undef TEMPLATE
 
   template <typename X>
@@ -409,7 +409,7 @@ public:
     return then(std::tr1::function<Future<X>(const T&)>(b));            \
   }
 
-  REPEAT_FROM_TO(1, 11, TEMPLATE, _) // Args A0 -> A9.
+  REPEAT_FROM_TO(1, 14, TEMPLATE, _) // Args A0 -> A9.
 #undef TEMPLATE
 
   // Helpers for the compiler to be able to forward 'defer' results.
@@ -436,7 +436,7 @@ public:
     return then(std::tr1::function<Future<X>(const T&)>(d));            \
   }
 
-  REPEAT_FROM_TO(1, 11, TEMPLATE, _) // Args A0 -> A9.
+  REPEAT_FROM_TO(1, 14, TEMPLATE, _) // Args A0 -> A9.
 #undef TEMPLATE
 
   template <typename X, typename U>
@@ -462,7 +462,7 @@ public:
     return then(std::tr1::function<Future<X>(const T&)>(d));            \
   }
 
-  REPEAT_FROM_TO(1, 11, TEMPLATE, _) // Args A0 -> A9.
+  REPEAT_FROM_TO(1, 14, TEMPLATE, _) // Args A0 -> A9.
 #undef TEMPLATE
 #endif // __cplusplus >= 201103L
 

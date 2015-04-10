@@ -247,11 +247,13 @@ public:
   {
     return DockerContainerizer::launch(
         containerId,
+        TaskInfo(),
         executorInfo,
         directory,
         user,
         slaveId,
         slavePid,
+        None(),
         checkpoint);
   }
 

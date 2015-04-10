@@ -26,6 +26,7 @@
 #include "docker/docker.hpp"
 
 #include "slave/containerizer/containerizer.hpp"
+#include "slave/containerizer/isolator.hpp"
 
 namespace mesos {
 namespace internal {
@@ -54,7 +55,8 @@ public:
   // This is only public for tests.
   DockerContainerizer(
       const Flags& flags,
-      process::Shared<Docker> docker);
+      process::Shared<Docker> docker,
+      const std::vector<Owned<Isolator>> isolators);
 
   virtual ~DockerContainerizer();
 
@@ -63,11 +65,13 @@ public:
 
   virtual process::Future<bool> launch(
       const ContainerID& containerId,
+      const TaskInfo& taskInfo,
       const ExecutorInfo& executorInfo,
       const std::string& directory,
       const Option<std::string>& user,
       const SlaveID& slaveId,
       const process::PID<Slave>& slavePid,
+      const Option<Slave*>& slave,
       bool checkpoint);
 
   virtual process::Future<bool> launch(

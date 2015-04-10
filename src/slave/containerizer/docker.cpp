@@ -45,8 +45,10 @@
 #include "slave/slave.hpp"
 
 #include "slave/containerizer/containerizer.hpp"
+#include "slave/containerizer/isolator.hpp"
 #include "slave/containerizer/docker.hpp"
 
+#include "slave/containerizer/isolators/cgroups/cpushare.hpp"
 #include "slave/containerizer/isolators/cgroups/constants.hpp"
 
 #include "usage/usage.hpp"
@@ -84,23 +86,27 @@ class DockerContainerizerProcess
 public:
   DockerContainerizerProcess(
       const Flags& _flags,
-      Shared<Docker> _docker)
+      Shared<Docker> _docker,
+      const vector<Owned<Isolator>> isolators_)
     : flags(_flags),
-      docker(_docker) {}
+      docker(_docker),
+      isolators(isolators_) {}
 
   virtual process::Future<Nothing> recover(
       const Option<state::SlaveState>& state);
 
   virtual process::Future<bool> launch(
       const ContainerID& containerId,
+      const TaskInfo& taskInfo,
       const ExecutorInfo& executorInfo,
       const std::string& directory,
       const Option<string>& user,
       const SlaveID& slaveId,
       const PID<Slave>& slavePid,
+      const Option<Slave*>& slave,
       bool checkpoint);
 
-  virtual process::Future<bool> launch(
+  virtual process::Future<bool> launch2(
       const ContainerID& containerId,
       const TaskInfo& taskInfo,
       const ExecutorInfo& executorInfo,
@@ -149,7 +155,9 @@ private:
       const std::list<Docker::Container>& containers);
 
   process::Future<Nothing> _launch(
-      const ContainerID& containerId);
+      const ContainerID& containerId,
+      const Option<Slave*>& slave,
+      const StatusUpdate& pullStartingStatusUpdate);
 
   process::Future<Nothing> __launch(
       const ContainerID& containerId);
@@ -216,6 +224,8 @@ private:
   const Flags flags;
 
   Shared<Docker> docker;
+
+  const vector<Owned<Isolator>> isolators;
 
   struct Container
   {
@@ -431,15 +441,19 @@ Try<DockerContainerizer*> DockerContainerizer::create(const Flags& flags)
     return Error(docker.error());
   }
 
-  return new DockerContainerizer(flags, Shared<Docker>(docker.get()));
+  vector<Owned<Isolator>> isolators;
+
+
+  return new DockerContainerizer(flags, Shared<Docker>(docker.get()), isolators);
 }
 
 
 DockerContainerizer::DockerContainerizer(
     const Flags& flags,
-    Shared<Docker> docker)
+    Shared<Docker> docker,
+    const std::vector<Owned<Isolator>> isolators)
 {
-  process = new DockerContainerizerProcess(flags, docker);
+  process = new DockerContainerizerProcess(flags, docker, isolators);
   spawn(process);
 }
 
@@ -648,21 +662,25 @@ Future<Nothing> DockerContainerizer::recover(
 
 Future<bool> DockerContainerizer::launch(
     const ContainerID& containerId,
+    const TaskInfo& taskInfo,
     const ExecutorInfo& executorInfo,
     const string& directory,
     const Option<string>& user,
     const SlaveID& slaveId,
     const PID<Slave>& slavePid,
+    const Option<Slave*>& slave,
     bool checkpoint)
 {
   return dispatch(process,
                   &DockerContainerizerProcess::launch,
                   containerId,
+                  taskInfo,
                   executorInfo,
                   directory,
                   user,
                   slaveId,
                   slavePid,
+                  slave,
                   checkpoint);
 }
 
@@ -678,7 +696,7 @@ Future<bool> DockerContainerizer::launch(
     bool checkpoint)
 {
   return dispatch(process,
-                  &DockerContainerizerProcess::launch,
+                  &DockerContainerizerProcess::launch2,
                   containerId,
                   taskInfo,
                   executorInfo,
@@ -881,7 +899,7 @@ Future<Nothing> DockerContainerizerProcess::_recover(
 }
 
 
-Future<bool> DockerContainerizerProcess::launch(
+Future<bool> DockerContainerizerProcess::launch2(
     const ContainerID& containerId,
     const TaskInfo& taskInfo,
     const ExecutorInfo& executorInfo,
@@ -930,7 +948,7 @@ Future<bool> DockerContainerizerProcess::launch(
             << "') of framework '" << executorInfo.framework_id() << "'";
 
   return fetch(containerId)
-    .then(defer(self(), &Self::_launch, containerId))
+    .then(defer(self(), &Self::_launch, containerId, None(), StatusUpdate()))
     .then(defer(self(), &Self::__launch, containerId))
     .then(defer(self(), &Self::___launch, containerId))
     .then(defer(self(), &Self::______launch, containerId, lambda::_1))
@@ -939,7 +957,9 @@ Future<bool> DockerContainerizerProcess::launch(
 
 
 Future<Nothing> DockerContainerizerProcess::_launch(
-    const ContainerID& containerId)
+    const ContainerID& containerId,
+    const Option<Slave*>& slave,
+    const StatusUpdate& pullStartStatusUpdate)
 {
   // Doing the fetch might have succeded but we were actually asked to
   // destroy the container, which we did, so don't continue.
@@ -950,6 +970,10 @@ Future<Nothing> DockerContainerizerProcess::_launch(
   Container* container = containers_[containerId];
 
   container->state = Container::PULLING;
+
+  if (slave.isSome()) {
+    slave.get()->statusUpdate(pullStartStatusUpdate, self());
+  }
 
   return pull(containerId, container->directory, container->image());
 }
@@ -1052,13 +1076,15 @@ Future<pid_t> DockerContainerizerProcess::___launch(
 }
 
 
-Future<bool> DockerContainerizerProcess::launch(
+process::Future<bool> DockerContainerizerProcess::launch(
     const ContainerID& containerId,
+    const TaskInfo& taskInfo,
     const ExecutorInfo& executorInfo,
-    const string& directory,
+    const std::string& directory,
     const Option<string>& user,
     const SlaveID& slaveId,
     const PID<Slave>& slavePid,
+    const Option<Slave*>& slave,
     bool checkpoint)
 {
   if (containers_.contains(containerId)) {
@@ -1098,8 +1124,19 @@ Future<bool> DockerContainerizerProcess::launch(
             << "' for executor '" << executorInfo.executor_id()
             << "' and framework '" << executorInfo.framework_id() << "'";
 
+  StatusUpdate pullMessage = protobuf::createStatusUpdate(
+      executorInfo.framework_id(),
+      slaveId,
+      taskInfo.task_id(),
+      TaskState::TASK_STAGING,
+      TaskStatus::SOURCE_SLAVE,
+      "Pulling...",
+      None(),
+      executorInfo.executor_id()
+  );
+
   return fetch(containerId)
-    .then(defer(self(), &Self::_launch, containerId))
+    .then(defer(self(), &Self::_launch, containerId, slave, pullMessage))
     .then(defer(self(), &Self::__launch, containerId))
     .then(defer(self(), &Self::____launch, containerId))
     .then(defer(self(), &Self::_____launch, containerId, lambda::_1))
@@ -1242,6 +1279,12 @@ Future<Nothing> DockerContainerizerProcess::__update(
     pid_t pid)
 {
 #ifdef __linux__
+  static Try<Isolator *> cpuIsolator = CgroupsCpushareIsolatorProcess::create(flags);
+  if (cpuIsolator.isError()) {
+    return Failure("Could not create cpu isolator: " + cpuIsolator.error());
+  }
+  static Owned<Isolator> cpuIso(cpuIsolator.get());
+
   // Determine the the cgroups hierarchies where the 'cpu' and
   // 'memory' subsystems are mounted (they may be the same). Note that
   // we make these static so we can reuse the result for subsequent
@@ -1261,6 +1304,7 @@ Future<Nothing> DockerContainerizerProcess::__update(
                    memoryHierarchy.error());
   }
 
+  /*
   // We need to find the cgroup(s) this container is currently running
   // in for both the hierarchy with the 'cpu' subsystem attached and
   // the hierarchy with the 'memory' subsystem attached so we can
@@ -1323,7 +1367,7 @@ Future<Nothing> DockerContainerizerProcess::__update(
                 << " for container " << containerId;
     }
   }
-
+  */
   // Now determine the cgroup for the 'memory' subsystem.
   Result<string> memoryCgroup = cgroups::memory::cgroup(pid);
 
@@ -1335,6 +1379,7 @@ Future<Nothing> DockerContainerizerProcess::__update(
                  << " does not appear to be a member of a cgroup "
                  << "where the 'memory' subsystem is mounted";
   }
+
 
   // And update the memory limits (if applicable).
   if (memoryHierarchy.isSome() &&
@@ -1385,6 +1430,9 @@ Future<Nothing> DockerContainerizerProcess::__update(
                 << " for container " << containerId;
     }
   }
+
+  return cpuIso->update(containerId, _resources);
+
 #endif // __linux__
 
   return Nothing();

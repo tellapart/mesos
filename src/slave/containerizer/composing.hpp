@@ -41,6 +41,7 @@ namespace slave {
 
 // Forward declaration.
 class ComposingContainerizerProcess;
+struct Executor;
 
 class ComposingContainerizer : public Containerizer
 {
@@ -58,11 +59,13 @@ public:
 
   virtual process::Future<bool> launch(
       const ContainerID& containerId,
+      const TaskInfo& taskInfo,
       const ExecutorInfo& executorInfo,
       const std::string& directory,
       const Option<std::string>& user,
       const SlaveID& slaveId,
       const process::PID<Slave>& slavePid,
+      const Option<Slave*>& slave,
       bool checkpoint);
 
   virtual process::Future<bool> launch(

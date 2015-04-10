@@ -115,7 +115,7 @@ defer(const Process<T>* process, void (T::*method)(void))
     return defer(process->self(), method, ENUM_PARAMS(N, a));           \
   }
 
-  REPEAT_FROM_TO(1, 11, TEMPLATE, _) // Args A0 -> A9.
+  REPEAT_FROM_TO(1, 14, TEMPLATE, _) // Args A0 -> A9.
 #undef TEMPLATE
 
 
@@ -215,7 +215,7 @@ defer(const Process<T>* process, Future<R> (T::*method)(void))
     return defer(process->self(), method, ENUM_PARAMS(N, a));           \
   }
 
-  REPEAT_FROM_TO(1, 11, TEMPLATE, _) // Args A0 -> A9.
+  REPEAT_FROM_TO(1, 14, TEMPLATE, _) // Args A0 -> A9.
 #undef TEMPLATE
 
 
@@ -315,7 +315,7 @@ defer(const Process<T>* process, R (T::*method)(void))
     return defer(process->self(), method, ENUM_PARAMS(N, a));           \
   }
 
-  REPEAT_FROM_TO(1, 11, TEMPLATE, _) // Args A0 -> A9.
+  REPEAT_FROM_TO(1, 14, TEMPLATE, _) // Args A0 -> A9.
 #undef TEMPLATE
 
 
@@ -402,7 +402,7 @@ inline void dispatcher(
     return promise->future();                                           \
   }
 
-  REPEAT_FROM_TO(1, 11, TEMPLATE, _) // Args A0 -> A9.
+  REPEAT_FROM_TO(1, 14, TEMPLATE, _) // Args A0 -> A9.
 #undef TEMPLATE
 
 
@@ -412,7 +412,7 @@ inline void dispatcher(
 #define TEMPLATE(Z, N, DATA)                            \
   typedef std::tr1::_Placeholder<INC(N)> _ ## N;
 
-  REPEAT(10, TEMPLATE, _)
+  REPEAT(13, TEMPLATE, _)
 #undef TEMPLATE
 
 } // namespace internal {
@@ -504,7 +504,7 @@ inline Deferred<void(void)> defer(const std::tr1::function<void(void)>& f)
     return __executor__->defer(f);                                      \
   }
 
-  REPEAT_FROM_TO(1, 11, TEMPLATE, _) // Args A0 -> A9.
+  REPEAT_FROM_TO(1, 14, TEMPLATE, _) // Args A0 -> A9.
 #undef TEMPLATE
 
 } // namespace process {
