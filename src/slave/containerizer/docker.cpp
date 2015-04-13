@@ -88,7 +88,14 @@ public:
       const Flags& _flags,
       Shared<Docker> _docker)
     : flags(_flags),
-      docker(_docker) {}
+      docker(_docker),
+      cpuHierarchy(cgroups::hierarchy("cpu")),
+      cpuAcctHierarchy(cgroups::hierarchy("cpuacct")),
+      memoryHierarchy(cgroups::hierarchy("memory"))
+  {
+    //cpuAcctHierarchy = ;
+    //memoryHierarchy = ;
+  }
 
   virtual process::Future<Nothing> recover(
       const Option<state::SlaveState>& state);
@@ -222,6 +229,12 @@ private:
   const Flags flags;
 
   Shared<Docker> docker;
+
+  Result<string> cpuHierarchy;
+
+  Result<string> cpuAcctHierarchy;
+
+  Result<string> memoryHierarchy;
 
   struct Container
   {
@@ -1274,9 +1287,6 @@ Future<Nothing> DockerContainerizerProcess::__update(
   // 'memory' subsystems are mounted (they may be the same). Note that
   // we make these static so we can reuse the result for subsequent
   // calls.
-  static Result<string> cpuHierarchy = cgroups::hierarchy("cpu");
-  static Result<string> memoryHierarchy = cgroups::hierarchy("memory");
-
   if (cpuHierarchy.isError()) {
     return Failure("Failed to determine the cgroup hierarchy "
                    "where the 'cpu' subsystem is mounted: " +
@@ -1478,13 +1488,18 @@ Future<ResourceStatistics> DockerContainerizerProcess::__usage(
 {
   Container* container = containers_[containerId];
 
-  // Note that here getting the root pid is enough because
-  // the root process acts as an 'init' process in the docker
-  // container, so no other child processes will escape it.
-  Try<ResourceStatistics> statistics = mesos::internal::usage(pid, true, true);
-  if (statistics.isError()) {
-    return Failure(statistics.error());
+  Result<string> cpuCgroup = cgroups::cpu::cgroup(pid);
+  Future<ResourceStatistics> statistics = CgroupsCpushareIsolatorProcess::usage(
+      containerId,
+      flags.cgroups_enable_cfs,
+      cpuAcctHierarchy.get(),
+      cpuHierarchy.get(),
+      cpuCgroup.get());
+
+  if (statistics.isFailed()) {
+    return Failure(statistics.failure());
   }
+
 
   ResourceStatistics result = statistics.get();
 
