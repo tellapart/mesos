@@ -1119,14 +1119,12 @@ process::Future<bool> DockerContainerizerProcess::launch(
       executorInfo.framework_id(),
       slaveId,
       taskInfo.task_id(),
-      TaskState::TASK_STAGING,
+      TaskState::TASK_STARTING,
       TaskStatus::SOURCE_SLAVE,
       "Pulling docker image...",
       None(),
       executorInfo.executor_id()
   );
-
-
 
   return fetch(containerId)
     .then(defer(self(), &Self::_launch, containerId, slave, pullMessage))

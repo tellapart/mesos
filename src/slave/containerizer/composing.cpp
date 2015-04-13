@@ -350,7 +350,7 @@ Future<bool> ComposingContainerizerProcess::launch(
     .then(defer(self(),
                 &Self::_launch,
                 containerId,
-                None(),
+                taskInfo,
                 executorInfo,
                 directory,
                 user,
@@ -358,7 +358,7 @@ Future<bool> ComposingContainerizerProcess::launch(
                 slavePid,
                 slave,
                 checkpoint,
-                true,
+                false,
                 containerizer,
                 lambda::_1));
 }
@@ -488,7 +488,7 @@ Future<bool> ComposingContainerizerProcess::launch2(
                 slavePid,
                 None(),
                 checkpoint,
-                false,
+                true,
                 containerizer,
                 lambda::_1));
 }
