@@ -40,6 +40,13 @@ class CgroupsCpushareIsolatorProcess : public IsolatorProcess
 public:
   static Try<Isolator*> create(const Flags& flags);
 
+  static process::Future<ResourceStatistics> usage(
+      const ContainerID& containerId,
+      const bool cgroupsEnableCFS,
+      const std::string& cpuAcctHierarchy,
+      const std::string& cpuHierarchy,
+      const std::string& cgroup);
+
   virtual ~CgroupsCpushareIsolatorProcess();
 
   virtual process::Future<Nothing> recover(

@@ -418,18 +418,32 @@ Future<ResourceStatistics> CgroupsCpushareIsolatorProcess::usage(
   }
 
   Info* info = CHECK_NOTNULL(infos[containerId]);
+  string cgroup = info->cgroup;
 
-  ResourceStatistics result;
+  return usage(
+      containerId,
+      flags.cgroups_enable_cfs,
+      hierarchies["cpuacct"],
+      hierarchies["cpu"],
+      cgroup);
+}
 
-  // Get the number of clock ticks, used for cpu accounting.
+Future<ResourceStatistics> CgroupsCpushareIsolatorProcess::usage(
+    const ContainerID& containerId,
+    const bool cgroupsEnableCFS,
+    const string& cpuAcctHierarchy,
+    const string& cpuHierarchy,
+    const string& cgroup)
+{
+// Get the number of clock ticks, used for cpu accounting.
   static long ticks = sysconf(_SC_CLK_TCK);
 
   PCHECK(ticks > 0) << "Failed to get sysconf(_SC_CLK_TCK)";
 
   // Add the cpuacct.stat information.
   Try<hashmap<string, uint64_t> > stat = cgroups::stat(
-      hierarchies["cpuacct"],
-      info->cgroup,
+      cpuAcctHierarchy,
+      cgroup,
       "cpuacct.stat");
 
   if (stat.isError()) {
@@ -440,6 +454,7 @@ Future<ResourceStatistics> CgroupsCpushareIsolatorProcess::usage(
   // structure, e.g., cgroups::cpuacct::stat.
   Option<uint64_t> user = stat.get().get("user");
   Option<uint64_t> system = stat.get().get("system");
+  ResourceStatistics result;
 
   if (user.isSome() && system.isSome()) {
     result.set_cpus_user_time_secs((double) user.get() / (double) ticks);
@@ -447,8 +462,8 @@ Future<ResourceStatistics> CgroupsCpushareIsolatorProcess::usage(
   }
 
   // Add the cpu.stat information only if CFS is enabled.
-  if (flags.cgroups_enable_cfs) {
-    stat = cgroups::stat(hierarchies["cpu"], info->cgroup, "cpu.stat");
+  if (cgroupsEnableCFS) {
+    stat = cgroups::stat(cpuHierarchy, cgroup, "cpu.stat");
     if (stat.isError()) {
       return Failure("Failed to read cpu.stat: " + stat.error());
     }
@@ -472,7 +487,6 @@ Future<ResourceStatistics> CgroupsCpushareIsolatorProcess::usage(
 
   return result;
 }
-
 
 namespace {
 

@@ -34,6 +34,7 @@
 #include "slave/containerizer/containerizer.hpp"
 #include "slave/containerizer/isolator.hpp"
 #include "slave/containerizer/launcher.hpp"
+#include "slave/slave.hpp"
 
 namespace mesos {
 namespace internal {
@@ -85,11 +86,13 @@ public:
 
   virtual process::Future<bool> launch(
       const ContainerID& containerId,
+      const TaskInfo& taskInfo,
       const ExecutorInfo& executorInfo,
       const std::string& directory,
       const Option<std::string>& user,
       const SlaveID& slaveId,
       const process::PID<Slave>& slavePid,
+      const Option<Slave*>& slave,
       bool checkpoint);
 
   virtual process::Future<bool> launch(

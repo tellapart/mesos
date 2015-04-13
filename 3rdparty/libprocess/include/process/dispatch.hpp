@@ -222,7 +222,7 @@ void dispatch(
     dispatch(process->self(), method, ENUM_PARAMS(N, a));               \
   }
 
-  REPEAT_FROM_TO(1, 11, TEMPLATE, _) // Args A0 -> A9.
+  REPEAT_FROM_TO(1, 14, TEMPLATE, _) // Args A0 -> A9.
 #undef TEMPLATE
 
 
@@ -347,7 +347,7 @@ Future<R> dispatch(
     return dispatch(process->self(), method, ENUM_PARAMS(N, a));        \
   }
 
-  REPEAT_FROM_TO(1, 11, TEMPLATE, _) // Args A0 -> A9.
+  REPEAT_FROM_TO(1, 14, TEMPLATE, _) // Args A0 -> A9.
 #undef TEMPLATE
 
 
@@ -472,7 +472,7 @@ Future<R> dispatch(
     return dispatch(process->self(), method, ENUM_PARAMS(N, a));        \
   }
 
-  REPEAT_FROM_TO(1, 11, TEMPLATE, _) // Args A0 -> A9.
+  REPEAT_FROM_TO(1, 14, TEMPLATE, _) // Args A0 -> A9.
 #undef TEMPLATE
 
 } // namespace process {

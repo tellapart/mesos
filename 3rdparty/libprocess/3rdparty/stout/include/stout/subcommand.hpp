@@ -71,7 +71,7 @@ public:
     return dispatch(prefix, argc, argv, subcommands);   \
   }
 
-  REPEAT_FROM_TO(1, 11, TEMPLATE, _) // Args C1 -> C11.
+  REPEAT_FROM_TO(1, 14, TEMPLATE, _) // Args C1 -> C11.
 #undef TEMPLATE
 #undef INSERT
 

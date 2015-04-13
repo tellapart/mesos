@@ -332,6 +332,12 @@ public:
         "}"
         );
 
+    add(&Flags::docker_stop_timeout,
+        "docker_stop_timeout",
+        "The time as a duration for docker to wait after stopping an instance\n"
+        "before it kills that instance.",
+        Seconds(0));
+
 #ifdef WITH_NETWORK_ISOLATOR
     add(&Flags::ephemeral_ports_per_container,
         "ephemeral_ports_per_container",
@@ -356,6 +362,12 @@ public:
         "If not specified or specified as zero, the network isolator will\n"
         "impose no limits to containers' egress traffic throughput.\n"
         "This flag uses the Bytes type, defined in stout.");
+
+    add(&Flags::network_enable_socket_statistics,
+        "network_enable_socket_statistics",
+        "Whether to collect socket statistics (e.g., TCP RTT) for\n"
+        "each container.",
+        false);
 #endif // WITH_NETWORK_ISOLATOR
 
     // This help message for --modules flag is the same for
@@ -447,11 +459,13 @@ public:
   std::string docker_sandbox_directory;
   Duration docker_remove_delay;
   Option<ContainerInfo> default_container_info;
+  Duration docker_stop_timeout;
 #ifdef WITH_NETWORK_ISOLATOR
   uint16_t ephemeral_ports_per_container;
   Option<std::string> eth0_name;
   Option<std::string> lo_name;
   Option<Bytes> egress_rate_limit_per_container;
+  bool network_enable_socket_statistics;
 #endif
   Option<Modules> modules;
 };
