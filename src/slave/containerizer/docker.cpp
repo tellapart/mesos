@@ -1489,19 +1489,23 @@ Future<ResourceStatistics> DockerContainerizerProcess::__usage(
   Container* container = containers_[containerId];
 
   Result<string> cpuCgroup = cgroups::cpu::cgroup(pid);
-  Future<ResourceStatistics> statistics = CgroupsCpushareIsolatorProcess::usage(
+  Result<string> memoryCgroup = cgroups::memory::cgroup(pid);
+
+  Future<ResourceStatistics> cpuStats = CgroupsCpushareIsolatorProcess::usage(
       containerId,
       flags.cgroups_enable_cfs,
       cpuAcctHierarchy.get(),
       cpuHierarchy.get(),
       cpuCgroup.get());
 
-  if (statistics.isFailed()) {
-    return Failure(statistics.failure());
+  Future<ResourceStatistics> memStats
+
+  if (cpuStats.isFailed()) {
+    return Failure(cpuStats.failure());
   }
 
 
-  ResourceStatistics result = statistics.get();
+  ResourceStatistics result = cpuStats.get();
 
   // Set the resource allocations.
   const Resources& resource = container->resources;
