@@ -969,11 +969,13 @@ TEST_F(NamespacesPidIsolatorTest, ROOT_PidNamespace)
 
   process::Future<bool> launch = containerizer.get()->launch(
       containerId,
+      TaskInfo(),
       CREATE_EXECUTOR_INFO("executor", command),
       directory,
       None(),
       SlaveID(),
       process::PID<Slave>(),
+      None(),
       false);
   AWAIT_READY(launch);
   ASSERT_TRUE(launch.get());

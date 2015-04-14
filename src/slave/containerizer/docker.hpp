@@ -70,11 +70,13 @@ public:
 
   virtual process::Future<bool> launch(
       const ContainerID& containerId,
+      const TaskInfo& taskInfo,
       const ExecutorInfo& executorInfo,
       const std::string& directory,
       const Option<std::string>& user,
       const SlaveID& slaveId,
       const process::PID<Slave>& slavePid,
+      const Option<Slave*>& slave,
       bool checkpoint);
 
   virtual process::Future<bool> launch(
@@ -124,11 +126,13 @@ public:
 
   virtual process::Future<bool> launch(
       const ContainerID& containerId,
+      const TaskInfo& taskInfo,
       const ExecutorInfo& executorInfo,
       const std::string& directory,
       const Option<std::string>& user,
       const SlaveID& slaveId,
       const process::PID<Slave>& slavePid,
+      const Option<Slave*>& slave,
       bool checkpoint);
 
   virtual process::Future<bool> launch(
@@ -181,7 +185,9 @@ private:
       const std::list<Docker::Container>& containers);
 
   process::Future<Nothing> _launch(
-      const ContainerID& containerId);
+      const ContainerID& containerId,
+      const Option<Slave*>& slave,
+      const StatusUpdate& pullStartingStatusUpdate);
 
   process::Future<Nothing> __launch(
       const ContainerID& containerId);

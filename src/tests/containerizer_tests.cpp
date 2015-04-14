@@ -129,11 +129,13 @@ TEST_F(MesosContainerizerIsolatorPreparationTest, ScriptSucceeds)
 
   process::Future<bool> launch = containerizer.get()->launch(
       containerId,
+      TaskInfo(),
       CREATE_EXECUTOR_INFO("executor", "exit 0"),
       directory,
       None(),
       SlaveID(),
       process::PID<Slave>(),
+      None(),
       false);
 
   // Wait until the launch completes.
@@ -176,11 +178,13 @@ TEST_F(MesosContainerizerIsolatorPreparationTest, ScriptFails)
 
   Future<bool> launch = containerizer.get()->launch(
       containerId,
+      TaskInfo(),
       CREATE_EXECUTOR_INFO("executor", "exit 0"),
       directory,
       None(),
       SlaveID(),
       process::PID<Slave>(),
+      None(),
       false);
 
   // Wait until the launch completes.
@@ -232,11 +236,13 @@ TEST_F(MesosContainerizerIsolatorPreparationTest, MultipleScripts)
 
   Future<bool> launch = containerizer.get()->launch(
       containerId,
+      TaskInfo(),
       CREATE_EXECUTOR_INFO("executor", "exit 0"),
       directory,
       None(),
       SlaveID(),
       process::PID<Slave>(),
+      None(),
       false);
 
   // Wait until the launch completes.
@@ -287,11 +293,13 @@ TEST_F(MesosContainerizerExecuteTest, IoRedirection)
 
   process::Future<bool> launch = containerizer.get()->launch(
       containerId,
+      TaskInfo(),
       CREATE_EXECUTOR_INFO("executor", command),
       directory,
       None(),
       SlaveID(),
       process::PID<Slave>(),
+      None(),
       false);
 
   // Wait for the launch to complete.

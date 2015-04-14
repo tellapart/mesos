@@ -58,11 +58,13 @@ public:
 
   Future<bool> launch(
       const ContainerID& containerId,
+      const TaskInfo& taskInfo,
       const ExecutorInfo& executorInfo,
       const string& directory,
       const Option<string>& user,
       const SlaveID& slaveId,
       const PID<Slave>& slavePid,
+      const Option<Slave*>& slave,
       bool checkpoint);
 
   Future<bool> launch(
@@ -105,7 +107,9 @@ private:
       const Option<string>& user,
       const SlaveID& slaveId,
       const PID<Slave>& slavePid,
+      const Option<Slave*>& slave,
       bool checkpoint,
+      bool fromTaskInfoBranch,
       vector<Containerizer*>::iterator containerizer,
       bool launched);
 
@@ -161,21 +165,25 @@ Future<Nothing> ComposingContainerizer::recover(
 
 Future<bool> ComposingContainerizer::launch(
     const ContainerID& containerId,
+    const TaskInfo& taskInfo,
     const ExecutorInfo& executorInfo,
     const string& directory,
     const Option<string>& user,
     const SlaveID& slaveId,
     const PID<Slave>& slavePid,
+    const Option<Slave*>& slave,
     bool checkpoint)
 {
   return dispatch(process,
                   &ComposingContainerizerProcess::launch,
                   containerId,
+                  taskInfo,
                   executorInfo,
                   directory,
                   user,
                   slaveId,
                   slavePid,
+                  slave,
                   checkpoint);
 }
 
@@ -306,11 +314,13 @@ Future<Nothing> ComposingContainerizerProcess::___recover()
 
 Future<bool> ComposingContainerizerProcess::launch(
     const ContainerID& containerId,
+    const TaskInfo& taskInfo,
     const ExecutorInfo& executorInfo,
     const string& directory,
     const Option<string>& user,
     const SlaveID& slaveId,
     const PID<Slave>& slavePid,
+    const Option<Slave*>& slave,
     bool checkpoint)
 {
   if (containers_.contains(containerId)) {
@@ -329,22 +339,26 @@ Future<bool> ComposingContainerizerProcess::launch(
 
   return (*containerizer)->launch(
       containerId,
+      taskInfo,
       executorInfo,
       directory,
       user,
       slaveId,
       slavePid,
+      slave,
       checkpoint)
     .then(defer(self(),
                 &Self::_launch,
                 containerId,
-                None(),
+                taskInfo,
                 executorInfo,
                 directory,
                 user,
                 slaveId,
                 slavePid,
+                slave,
                 checkpoint,
+                false,
                 containerizer,
                 lambda::_1));
 }
@@ -358,7 +372,9 @@ Future<bool> ComposingContainerizerProcess::_launch(
     const Option<string>& user,
     const SlaveID& slaveId,
     const PID<Slave>& slavePid,
+    const Option<Slave*>& slave,
     bool checkpoint,
+    bool fromTaskInfoBranch,
     vector<Containerizer*>::iterator containerizer,
     bool launched)
 {
@@ -389,7 +405,7 @@ Future<bool> ComposingContainerizerProcess::_launch(
 
   container->containerizer = *containerizer;
 
-  Future<bool> f = taskInfo.isSome() ?
+  Future<bool> f = fromTaskInfoBranch ?
       (*containerizer)->launch(
           containerId,
           taskInfo.get(),
@@ -401,11 +417,13 @@ Future<bool> ComposingContainerizerProcess::_launch(
           checkpoint) :
       (*containerizer)->launch(
           containerId,
+          taskInfo.get(),
           executorInfo,
           directory,
           user,
           slaveId,
           slavePid,
+          slave,
           checkpoint);
 
   return f.then(
@@ -418,7 +436,9 @@ Future<bool> ComposingContainerizerProcess::_launch(
             user,
             slaveId,
             slavePid,
+            slave,
             checkpoint,
+            fromTaskInfoBranch,
             containerizer,
             lambda::_1));
 }
@@ -466,7 +486,9 @@ Future<bool> ComposingContainerizerProcess::launch(
                 user,
                 slaveId,
                 slavePid,
+                None(),
                 checkpoint,
+                true,
                 containerizer,
                 lambda::_1));
 }

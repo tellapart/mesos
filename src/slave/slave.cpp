@@ -4202,13 +4202,16 @@ Executor* Framework::launchExecutor(
     // the task will include the executor to run. The actual task to
     // run will be enqueued and subsequently handled by the executor
     // when it has registered to the slave.
+
     launch = slave->containerizer->launch(
         containerId,
-        executorInfo_, // modified to include the task's resources.
+        taskInfo,
+        executorInfo_,
         executor->directory,
         user,
         slave->info.id(),
         slave->self(),
+        slave,
         info.checkpoint());
   } else {
     // An executor has _not_ been provided by the task and will

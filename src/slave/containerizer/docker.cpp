@@ -41,6 +41,8 @@
 #include "linux/cgroups.hpp"
 #endif // __linux__
 
+#include "mesos/slave/isolator.hpp"
+
 #include "slave/paths.hpp"
 #include "slave/slave.hpp"
 
@@ -49,6 +51,7 @@
 #include "slave/containerizer/fetcher.hpp"
 
 
+#include "slave/containerizer/isolators/cgroups/cpushare.hpp"
 #include "slave/containerizer/isolators/cgroups/constants.hpp"
 
 #include "usage/usage.hpp"
@@ -292,22 +295,26 @@ Future<Nothing> DockerContainerizer::recover(
 
 Future<bool> DockerContainerizer::launch(
     const ContainerID& containerId,
+    const TaskInfo& taskInfo,
     const ExecutorInfo& executorInfo,
     const string& directory,
     const Option<string>& user,
     const SlaveID& slaveId,
     const PID<Slave>& slavePid,
+    const Option<Slave*>& slave,
     bool checkpoint)
 {
   return dispatch(
       process.get(),
       &DockerContainerizerProcess::launch,
       containerId,
+      taskInfo,
       executorInfo,
       directory,
       user,
       slaveId,
       slavePid,
+      slave,
       checkpoint);
 }
 
@@ -586,7 +593,7 @@ Future<bool> DockerContainerizerProcess::launch(
             << "') of framework '" << executorInfo.framework_id() << "'";
 
   return fetch(containerId)
-    .then(defer(self(), &Self::_launch, containerId))
+    .then(defer(self(), &Self::_launch, containerId, None(), StatusUpdate()))
     .then(defer(self(), &Self::__launch, containerId))
     .then(defer(self(), &Self::___launch, containerId))
     .then(defer(self(), &Self::______launch, containerId, lambda::_1))
@@ -595,7 +602,9 @@ Future<bool> DockerContainerizerProcess::launch(
 
 
 Future<Nothing> DockerContainerizerProcess::_launch(
-    const ContainerID& containerId)
+    const ContainerID& containerId,
+    const Option<Slave*>& slave,
+    const StatusUpdate& pullStartStatusUpdate)
 {
   // Doing the fetch might have succeded but we were actually asked to
   // destroy the container, which we did, so don't continue.
@@ -606,6 +615,10 @@ Future<Nothing> DockerContainerizerProcess::_launch(
   Container* container = containers_[containerId];
 
   container->state = Container::PULLING;
+
+  if (slave.isSome()) {
+    slave.get()->statusUpdate(pullStartStatusUpdate, self());
+  }
 
   return pull(
       containerId,
@@ -711,14 +724,15 @@ Future<pid_t> DockerContainerizerProcess::___launch(
   return s.get().pid();
 }
 
-
-Future<bool> DockerContainerizerProcess::launch(
+process::Future<bool> DockerContainerizerProcess::launch(
     const ContainerID& containerId,
+    const TaskInfo& taskInfo,
     const ExecutorInfo& executorInfo,
     const string& directory,
     const Option<string>& user,
     const SlaveID& slaveId,
     const PID<Slave>& slavePid,
+    const Option<Slave*>& slave,
     bool checkpoint)
 {
   if (containers_.contains(containerId)) {
@@ -758,8 +772,19 @@ Future<bool> DockerContainerizerProcess::launch(
             << "' for executor '" << executorInfo.executor_id()
             << "' and framework '" << executorInfo.framework_id() << "'";
 
+  StatusUpdate pullMessage = protobuf::createStatusUpdate(
+      executorInfo.framework_id(),
+      slaveId,
+      taskInfo.task_id(),
+      TaskState::TASK_STARTING,
+      TaskStatus::SOURCE_SLAVE,
+      "Pulling docker image...",
+      None(),
+      executorInfo.executor_id()
+  );
+
   return fetch(containerId)
-    .then(defer(self(), &Self::_launch, containerId))
+    .then(defer(self(), &Self::_launch, containerId, slave, pullMessage))
     .then(defer(self(), &Self::__launch, containerId))
     .then(defer(self(), &Self::____launch, containerId))
     .then(defer(self(), &Self::_____launch, containerId, lambda::_1))
