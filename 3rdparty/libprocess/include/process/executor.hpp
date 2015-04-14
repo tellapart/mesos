@@ -42,7 +42,7 @@ private:
     f(ENUM_PARAMS(N, a));                                      \
   }
 
-  REPEAT_FROM_TO(1, 11, TEMPLATE, _) // Args A0 -> A9.
+  REPEAT_FROM_TO(1, 14, TEMPLATE, _) // Args A0 -> A9.
 #undef TEMPLATE
 };
 
@@ -83,7 +83,7 @@ private:
 #define TEMPLATE(Z, N, DATA)                            \
   typedef std::tr1::_Placeholder<INC(N)> _ ## N;
 
-  REPEAT(10, TEMPLATE, _)
+  REPEAT(13, TEMPLATE, _)
 #undef TEMPLATE
 
 public:
@@ -109,7 +109,7 @@ public:
             ENUM_BINARY_PARAMS(N, _, () INTERCEPT)));                   \
   }
 
-  REPEAT_FROM_TO(1, 11, TEMPLATE, _) // Args A0 -> A9.
+  REPEAT_FROM_TO(1, 14, TEMPLATE, _) // Args A0 -> A9.
 #undef TEMPLATE
 
   // Unfortunately, it is currently difficult to "forward" type
@@ -132,7 +132,7 @@ public:
     return defer(std::tr1::function<void(ENUM_PARAMS(N, A))>(b));       \
   }
 
-  REPEAT_FROM_TO(1, 11, TEMPLATE, _) // Args A0 -> A9.
+  REPEAT_FROM_TO(1, 14, TEMPLATE, _) // Args A0 -> A9.
 #undef TEMPLATE
 
   // Now the member std::tr1::bind results:
@@ -217,7 +217,7 @@ public:
     return defer(std::tr1::function<void(ENUM_PARAMS(N, A))>(b));       \
   }
 
-  REPEAT(11, TEMPLATE, _) // No args and args A0 -> A9.
+  REPEAT(13, TEMPLATE, _) // No args and args A0 -> A9.
 #undef TEMPLATE
 
 private:
@@ -246,7 +246,7 @@ private:
         f, ENUM_PARAMS(N, a));                                          \
   }
 
-  REPEAT_FROM_TO(1, 11, TEMPLATE, _) // Args A0 -> A9.
+  REPEAT_FROM_TO(1, 14, TEMPLATE, _) // Args A0 -> A9.
 #undef TEMPLATE
 
   internal::ExecutorProcess process;

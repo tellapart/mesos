@@ -57,7 +57,7 @@ private:
   friend Deferred<Future<R>(ENUM_PARAMS(N, A))> defer(                  \
       const std::tr1::function<Future<R>(ENUM_PARAMS(N, A))>& f);
 
-  REPEAT_FROM_TO(1, 11, TEMPLATE, _) // Args A0 -> A9.
+  REPEAT_FROM_TO(1, 14, TEMPLATE, _) // Args A0 -> A9.
 #undef TEMPLATE
 
   /*implicit*/ Deferred(const std::tr1::function<F>& f)
@@ -101,7 +101,7 @@ private:
         void (T::*method)(ENUM_PARAMS(N, P)),                           \
         ENUM_BINARY_PARAMS(N, A, a));
 
-  REPEAT_FROM_TO(1, 11, TEMPLATE, _) // Args A0 -> A9.
+  REPEAT_FROM_TO(1, 14, TEMPLATE, _) // Args A0 -> A9.
 #undef TEMPLATE
 
   template <typename R, typename T>
@@ -124,7 +124,7 @@ private:
         Future<R> (T::*method)(ENUM_PARAMS(N, P)),                      \
         ENUM_BINARY_PARAMS(N, A, a));
 
-  REPEAT_FROM_TO(1, 11, TEMPLATE, _) // Args A0 -> A9.
+  REPEAT_FROM_TO(1, 14, TEMPLATE, _) // Args A0 -> A9.
 #undef TEMPLATE
 
   template <typename R, typename T>
@@ -147,7 +147,7 @@ private:
         R (T::*method)(ENUM_PARAMS(N, P)),                              \
         ENUM_BINARY_PARAMS(N, A, a));
 
-  REPEAT_FROM_TO(1, 11, TEMPLATE, _) // Args A0 -> A9.
+  REPEAT_FROM_TO(1, 14, TEMPLATE, _) // Args A0 -> A9.
 #undef TEMPLATE
 
   /*implicit*/ _Defer(const std::tr1::_Bind<F>& b)

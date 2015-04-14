@@ -35,7 +35,6 @@
 #include <stout/option.hpp>
 #include <stout/try.hpp>
 
-
 namespace mesos {
 namespace internal {
 namespace slave {
@@ -77,11 +76,13 @@ public:
   // false or a failure is something went wrong.
   virtual process::Future<bool> launch(
       const ContainerID& containerId,
+      const TaskInfo& taskInfo,
       const ExecutorInfo& executorInfo,
       const std::string& directory,
       const Option<std::string>& user,
       const SlaveID& slaveId,
       const process::PID<Slave>& slavePid,
+      const Option<mesos::internal::slave::Slave*>& slave,
       bool checkpoint) = 0;
 
   // Launch a containerized task. Returns true if launching this
