@@ -371,7 +371,6 @@ Future<Nothing> CgroupsMemIsolatorProcess::update(
   return Nothing();
 }
 
-
 Future<ResourceStatistics> CgroupsMemIsolatorProcess::usage(
     const ContainerID& containerId)
 {
@@ -380,13 +379,21 @@ Future<ResourceStatistics> CgroupsMemIsolatorProcess::usage(
   }
 
   Info* info = CHECK_NOTNULL(infos[containerId]);
+  return usage(containerId, hierarchy, info->cgroup);
+}
 
+
+Future<ResourceStatistics> CgroupsMemIsolatorProcess::usage(
+    const ContainerID& containerId,
+    const string& hierarchy,
+    const string& cgroup)
+{
   ResourceStatistics result;
 
   // The rss from memory.stat is wrong in two dimensions:
   //   1. It does not include child cgroups.
   //   2. It does not include any file backed pages.
-  Try<Bytes> usage = cgroups::memory::usage_in_bytes(hierarchy, info->cgroup);
+  Try<Bytes> usage = cgroups::memory::usage_in_bytes(hierarchy, cgroup);
   if (usage.isError()) {
     return Failure("Failed to parse memory.usage_in_bytes: " + usage.error());
   }
@@ -396,7 +403,7 @@ Future<ResourceStatistics> CgroupsMemIsolatorProcess::usage(
   result.set_mem_rss_bytes(usage.get().bytes());
 
   Try<hashmap<string, uint64_t> > stat =
-    cgroups::stat(hierarchy, info->cgroup, "memory.stat");
+    cgroups::stat(hierarchy, cgroup, "memory.stat");
 
   if (stat.isError()) {
     return Failure("Failed to read memory.stat: " + stat.error());

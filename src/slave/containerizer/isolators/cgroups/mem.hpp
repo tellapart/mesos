@@ -35,6 +35,10 @@ class CgroupsMemIsolatorProcess : public mesos::slave::IsolatorProcess
 {
 public:
   static Try<mesos::slave::Isolator*> create(const Flags& flags);
+  static process::Future<ResourceStatistics> usage(
+      const ContainerID& containerId,
+      const std::string& hierarchy,
+      const std::string& cgroup);
 
   virtual ~CgroupsMemIsolatorProcess();
 
