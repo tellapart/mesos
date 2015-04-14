@@ -22,6 +22,7 @@
 #include <vector>
 
 #include <process/check.hpp>
+#include <process/collect.hpp>
 #include <process/defer.hpp>
 #include <process/delay.hpp>
 #include <process/io.hpp>
@@ -52,6 +53,7 @@
 
 
 #include "slave/containerizer/isolators/cgroups/cpushare.hpp"
+#include "slave/containerizer/isolators/cgroups/mem.hpp"
 #include "slave/containerizer/isolators/cgroups/constants.hpp"
 
 #include "usage/usage.hpp"
@@ -1150,17 +1152,45 @@ Future<ResourceStatistics> DockerContainerizerProcess::__usage(
     const ContainerID& containerId,
     pid_t pid)
 {
-  Container* container = containers_[containerId];
+  static Result<string> cpuHierarchy = cgroups::hierarchy("cpu");
+  static Result<string> cpuAcctHierarchy = cgroups::hierarchy("cpuacct");
+  static Result<string> memoryHierarchy = cgroups::hierarchy("memory");
 
-  // Note that here getting the root pid is enough because
-  // the root process acts as an 'init' process in the docker
-  // container, so no other child processes will escape it.
-  Try<ResourceStatistics> statistics = mesos::internal::usage(pid, true, true);
-  if (statistics.isError()) {
-    return Failure(statistics.error());
+  Result<string> cpuCgroup = cgroups::cpu::cgroup(pid);
+  Result<string> memCgroup = cgroups::memory::cgroup(pid);
+
+  if (cpuCgroup.isError() || memCgroup.isError()) {
+    return Failure("Can't find cgroup for pid " + stringify(pid));
   }
 
-  ResourceStatistics result = statistics.get();
+  list<Future<ResourceStatistics>> stats;
+  stats.push_back(CgroupsCpushareIsolatorProcess::usage(
+      containerId,
+      flags.cgroups_enable_cfs,
+      cpuAcctHierarchy.get(),
+      cpuHierarchy.get(),
+      cpuCgroup.get()));
+
+  stats.push_back(CgroupsMemIsolatorProcess::usage(
+      containerId,
+      memoryHierarchy.get(),
+      memCgroup.get()));
+
+  return collect(stats)
+      .then(defer(self(), &Self::___usage, containerId, lambda::_1));
+}
+
+
+Future<ResourceStatistics> DockerContainerizerProcess::___usage(
+    const ContainerID& containerId,
+    const std::list<ResourceStatistics>& statistics)
+{
+  if (!containers_.contains(containerId)) {
+    return Failure("Container has been destroyed:" + stringify(containerId));
+  }
+  Container* container = containers_[containerId];
+  ResourceStatistics result;
+  result.set_timestamp(Clock::now().secs());
 
   // Set the resource allocations.
   const Resources& resource = container->resources;
@@ -1172,6 +1202,10 @@ Future<ResourceStatistics> DockerContainerizerProcess::__usage(
   Option<double> cpus = resource.cpus();
   if (cpus.isSome()) {
     result.set_cpus_limit(cpus.get());
+  }
+
+  foreach (ResourceStatistics stat, statistics) {
+    result.MergeFrom(stat);
   }
 
   return result;

@@ -244,6 +244,10 @@ private:
       const ContainerID& containerId,
       pid_t pid);
 
+  Future<ResourceStatistics> ___usage(
+      const ContainerID& containerId,
+      const std::list<ResourceStatistics>& statistics);
+
   // Call back for when the executor exits. This will trigger
   // container destroy.
   void reaped(const ContainerID& containerId);
