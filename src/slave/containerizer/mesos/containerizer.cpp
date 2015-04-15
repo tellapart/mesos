@@ -327,6 +327,12 @@ Future<Nothing> MesosContainerizerProcess::recover(
           continue;
         }
 
+        if (executor.info.get().has_container() &&
+            executor.info.get().container().type() != ContainerInfo::MESOS) {
+          LOG(INFO) << "Skipping recovery of non-mesos container.";
+          continue;
+        }
+
         // We are only interested in the latest run of the executor!
         const ContainerID& containerId = executor.latest.get();
         Option<RunState> run = executor.runs.get(containerId);

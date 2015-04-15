@@ -452,6 +452,16 @@ Future<Nothing> DockerContainerizerProcess::recover(
           continue;
         }
 
+        if (!executor.info.get().has_container()) {
+          LOG(INFO) << "No container info found, skipping recovery";
+          continue;
+        }
+
+        if (executor.info.get().container().type() != ContainerInfo::DOCKER) {
+          LOG(INFO) << "Skipping recovery of non-docker container";
+          continue;
+        }
+
         // We are only interested in the latest run of the executor!
         const ContainerID& containerId = executor.latest.get();
         Option<RunState> run = executor.runs.get(containerId);
