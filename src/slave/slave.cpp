@@ -3077,6 +3077,26 @@ void Slave::executorLaunched(
                  lambda::_1));
 
   if (!future.isReady()) {
+    // Let the scheduler know why we failed to start the container.
+    mesos::TaskState taskState = TASK_FAILED;
+    TaskStatus::Reason reason = TaskStatus::REASON_EXECUTOR_TERMINATED;
+
+    Framework* framework = getFramework(frameworkId);
+    Executor* executor = framework->getExecutor(executorId);
+    foreach (const TaskID& taskId, executor->queuedTasks.keys()) {
+        statusUpdate(protobuf::createStatusUpdate(
+                frameworkId,
+                info.id(),
+                taskId,
+                taskState,
+                TaskStatus::SOURCE_SLAVE,
+                future.isFailed() ? future.failure() :
+                "Failed to start container",
+                reason,
+                executorId),
+            UPID());
+      }
+
     // The containerizer will clean up if the launch fails we'll just log this
     // and leave the executor registration to timeout.
     LOG(ERROR) << "Container '" << containerId
