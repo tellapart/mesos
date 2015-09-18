@@ -112,7 +112,7 @@ Try<DockerContainerizer*> DockerContainerizer::create(
     const Flags& flags,
     Fetcher* fetcher)
 {
-  Try<Docker*> docker = Docker::create(flags.docker);
+  Try<Docker*> docker = Docker::create(flags.docker, false);
   if (docker.isError()) {
     return Error(docker.error());
   }
