@@ -35,11 +35,15 @@
 #include <iostream>
 
 #include <mesos/executor.hpp>
+#ifndef PY_EXECUTOR_ONLY
 #include <mesos/scheduler.hpp>
+#endif
 
 #include "module.hpp"
+#ifndef PY_EXECUTOR_ONLY
 #include "proxy_scheduler.hpp"
 #include "mesos_scheduler_driver_impl.hpp"
+#endif
 #include "proxy_executor.hpp"
 #include "mesos_executor_driver_impl.hpp"
 
@@ -84,17 +88,21 @@ PyMODINIT_FUNC init_mesos(void)
     return;
 
   // Initialize our Python types.
+#ifndef PY_EXECUTOR_ONLY
   if (PyType_Ready(&MesosSchedulerDriverImplType) < 0)
     return;
+#endif
   if (PyType_Ready(&MesosExecutorDriverImplType) < 0)
     return;
 
   // Create the _mesos module and add our types to it.
   PyObject* module = Py_InitModule("_mesos", MODULE_METHODS);
+#ifndef PY_EXECUTOR_ONLY
   Py_INCREF(&MesosSchedulerDriverImplType);
   PyModule_AddObject(module,
                      "MesosSchedulerDriverImpl",
                      (PyObject*) &MesosSchedulerDriverImplType);
+#endif
   Py_INCREF(&MesosExecutorDriverImplType);
   PyModule_AddObject(module,
                      "MesosExecutorDriverImpl",
