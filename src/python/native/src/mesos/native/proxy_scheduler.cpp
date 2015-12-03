@@ -18,8 +18,6 @@
 
 // Python.h must be included before standard headers.
 // See: http://docs.python.org/2/c-api/intro.html#include-files
-#ifndef PY_EXECUTOR_ONLY
-
 #include <Python.h>
 
 #include <iostream>
@@ -386,5 +384,3 @@ cleanup:
 
 } // namespace python {
 } // namespace mesos {
-
-#endif

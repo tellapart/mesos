@@ -1250,12 +1250,10 @@ There are two possible workarounds for this issue:
                   [chmod +x src/examples/python/test-containerizer])
   AC_CONFIG_FILES([src/python/setup.py])
   AC_CONFIG_FILES([src/python/cli/setup.py])
-  AC_CONFIG_FILES([src/python/executor/ext_modules.py])
   AC_CONFIG_FILES([src/python/executor/setup.py])
   AC_CONFIG_FILES([src/python/interface/setup.py])
   AC_CONFIG_FILES([src/python/native/ext_modules.py])
   AC_CONFIG_FILES([src/python/native/setup.py])
-
 
   # When clang is being used, make sure that the distutils python-
   # config cflags extraction does not cause build errors (MESOS-1079).

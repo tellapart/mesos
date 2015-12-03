@@ -32,7 +32,7 @@ config = {
     'license': 'Apache 2.0',
     'keywords': 'mesos',
     'classifiers': [ ],
-    'ext_modules': [ ext_modules.mesos_module ]
+    'ext_modules': [ ext_modules.create_module('native') ]
 }
 
 from setuptools import setup

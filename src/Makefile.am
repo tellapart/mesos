@@ -389,18 +389,11 @@ python/interface/src/mesos/interface/executor_pb2.py: $(EXECUTOR_PROTO)
 # self-contained Python library and statically link in the third party
 # libraries themselves.
 noinst_LTLIBRARIES += libmesos_no_3rdparty.la
-noinst_LTLIBRARIES += libmesos_exec.la
 
 nodist_libmesos_no_3rdparty_la_SOURCES =				\
   $(CXX_PROTOS)								\
   $(FLAGS_PROTOS)							\
   $(MESSAGES_PROTOS)							\
-  $(REGISTRY_PROTOS)
-
-nodist_libmesos_exec_la_SOURCES =	                                \
-  $(CXX_PROTOS)                                                         \
-  $(FLAGS_PROTOS)                                                       \
-  $(MESSAGES_PROTOS)                                                    \
   $(REGISTRY_PROTOS)
 
 # TODO(tillt): Remove authentication/cram_md5/* which will enable us to
@@ -492,37 +485,6 @@ libmesos_no_3rdparty_la_SOURCES =					\
 	zookeeper/authentication.cpp					\
 	zookeeper/group.cpp
 
-libmesos_exec_la_SOURCES =						\
-	master/registry.proto						\
-	messages/flags.proto						\
-	messages/messages.proto						\
-	slave/containerizer/mesos/provisioner/docker/message.proto
-
-libmesos_exec_la_SOURCES += 						\
-	common/attributes.cpp						\
-	common/protobuf_utils.cpp					\
-	common/resources.cpp						\
-	common/type_utils.cpp						\
-	common/values.cpp						\
-	exec/exec.cpp							\
-	logging/flags.cpp                                               \
-	logging/logging.cpp                                             \
-	master/constants.cpp						\
-	messages/messages.proto						\
-	slave/constants.cpp						\
-	slave/state.cpp
-
-libmesos_exec_la_SOURCES +=						\
-	common/attributes.hpp						\
-	common/protobuf_utils.hpp					\
-	exec/exec.hpp							\
-	logging/flags.hpp						\
-	logging/logging.hpp						\
-	master/constants.hpp						\
-	messages/messages.hpp						\
-	slave/constants.hpp						\
-	slave/state.hpp							\
-	version/version.hpp
 
 pkginclude_HEADERS =							\
   $(top_srcdir)/include/mesos/executor.hpp				\
@@ -818,10 +780,8 @@ libmesos_no_3rdparty_la_SOURCES +=					\
 	zookeeper/zookeeper.hpp
 
 libmesos_no_3rdparty_la_CPPFLAGS = $(MESOS_CPPFLAGS)
-libmesos_exec_la_CPPFLAGS = $(MESOS_CPPFLAGS)
 
 libmesos_no_3rdparty_la_LIBADD = # Initialized to enable using +=.
-libmesos_exec_la_LIBADD =
 
 # Convenience library that *always* gets rebuilt to ensure accurate info.
 noinst_LTLIBRARIES += libbuild.la
@@ -860,7 +820,7 @@ BUILD_FLAGS = $(echo $(MESOS_CPPFLAGS) $(CPPFLAGS) | sed 's/\"/\\\"/g')	\
 libbuild_la_CPPFLAGS += -DBUILD_FLAGS="\"$$BUILD_FLAGS\""
 
 libmesos_no_3rdparty_la_LIBADD += libbuild.la
-libmesos_exec_la_LIBADD += libbuild.la
+
 
 # Convenience library for building the replicated log in order to
 # include the leveldb headers.
@@ -898,7 +858,7 @@ nodist_liblog_la_SOURCES = $(LOG_PROTOS)
 liblog_la_CPPFLAGS = $(MESOS_CPPFLAGS)
 
 libmesos_no_3rdparty_la_LIBADD += liblog.la
-libmesos_exec_la_LIBADD += liblog.la
+
 
 # Convenience library for building "state" abstraction in order to
 # include the leveldb headers.
@@ -1347,7 +1307,6 @@ PYTHON_SOURCE =								\
 	python/native/src/mesos/native/proxy_scheduler.cpp		\
 	python/native/src/mesos/native/proxy_scheduler.hpp
 
-
 EXTRA_DIST += $(PYTHON_SOURCE)
 
 if HAS_PYTHON
@@ -1411,7 +1370,6 @@ MESOS_WHLS =										\
 $(MESOS_EGGS) $(MESOS_WHLS):								\
 		$(PYTHON_PROTOS)							\
 		$(PYTHON_SOURCE)							\
-		libmesos_exec.la							\
 		libmesos_no_3rdparty.la							\
 		$(PROTOBUF_EGG)
 	@cd python/`echo $@ | awk -F"mesos[.]?" '{print $$2}' | cut -d- -f1` &&		\

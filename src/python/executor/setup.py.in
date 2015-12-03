@@ -16,7 +16,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Add native to the python path so we can import the ext_modules module.
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'native')))
+
 import ext_modules
+native_module = ext_modules.create_module('executor')
+native_module.define_macros = [("PY_EXECUTOR_ONLY", "1")]
+# Dont include the scheduler CPP files.
+native_module.sources = [f for f in native_module.sources if 'scheduler' not in f]
 
 config = {
     'name': 'mesos.executor',
@@ -32,7 +41,7 @@ config = {
     'license': 'Apache 2.0',
     'keywords': 'mesos',
     'classifiers': [ ],
-    'ext_modules': [ ext_modules.mesos_module ]
+    'ext_modules': [ native_module ]
 }
 
 from setuptools import setup
@@ -40,17 +49,15 @@ from setuptools.command.build_ext import build_ext
 import os
 import shutil
 
+# Copy all cpp files from native/src/mesos/native to executor/sec/mesos/executor
+# so we can build them.
 class custom_build_ext(build_ext):
     def run(self):
         root = os.path.join('..', 'native', 'src', 'mesos', 'native')
-        try:
-            os.mkdir('tmp')
-        except OSError:
-            pass
-
+        dest = os.path.join('src', 'mesos', 'executor')
         for f in os.listdir(root):
-            if f.endswith('.cpp'):
-                shutil.copy(os.path.join(root, f), os.path.join('tmp', f))
+            if f.endswith('.cpp') and not 'scheduler' in f:
+                shutil.copy(os.path.join(root, f), os.path.join(dest, f))
 
         build_ext.run(self)
 
