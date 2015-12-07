@@ -26,6 +26,7 @@ native_module = ext_modules.create_module('executor')
 native_module.define_macros = [("PY_EXECUTOR_ONLY", "1")]
 # Dont include the scheduler CPP files.
 native_module.sources = [f for f in native_module.sources if 'scheduler' not in f]
+native_module.extra_link_args.insert(0, '-Wl,--as-needed')
 
 config = {
     'name': 'mesos.executor',
