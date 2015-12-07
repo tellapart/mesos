@@ -1290,6 +1290,8 @@ PYTHON_SOURCE =								\
 	python/cli/src/mesos/cli.py					\
 	python/cli/src/mesos/futures.py					\
 	python/cli/src/mesos/http.py					\
+	python/executor/src/mesos/__init__.py				\
+	python/executor/src/mesos/executor/__init__.py			\
 	python/interface/src/mesos/__init__.py				\
 	python/interface/src/mesos/interface/__init__.py		\
 	python/native/src/mesos/__init__.py				\
@@ -1350,12 +1352,14 @@ $(PYTHON_SOURCE):
 MESOS_EGGS =										\
 	python/dist/mesos-$(PACKAGE_VERSION)$(PYTHON_EGG_PUREPY_POSTFIX).egg		\
 	python/dist/mesos.cli-$(PACKAGE_VERSION)$(PYTHON_EGG_PUREPY_POSTFIX).egg	\
+	python/dist/mesos.executor-$(PACKAGE_VERSION)$(PYTHON_EGG_PUREPY_POSTFIX).egg	\
 	python/dist/mesos.interface-$(PACKAGE_VERSION)$(PYTHON_EGG_PUREPY_POSTFIX).egg	\
 	python/dist/mesos.native-$(PACKAGE_VERSION)$(PYTHON_EGG_POSTFIX).egg
 
 MESOS_WHLS =										\
 	python/dist/mesos-$(PACKAGE_VERSION)$(PYTHON_WHL_PUREPY_POSTFIX).whl		\
 	python/dist/mesos.cli-$(PACKAGE_VERSION)$(PYTHON_WHL_PUREPY_POSTFIX).whl	\
+	python/dist/mesos.executor-$(PACKAGE_VERSION)$(PYTHON_WHL_POSTFIX).whl		\
 	python/dist/mesos.interface-$(PACKAGE_VERSION)$(PYTHON_WHL_PUREPY_POSTFIX).whl	\
 	python/dist/mesos.native-$(PACKAGE_VERSION)$(PYTHON_WHL_POSTFIX).whl
 

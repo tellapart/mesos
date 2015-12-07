@@ -1250,6 +1250,7 @@ There are two possible workarounds for this issue:
                   [chmod +x src/examples/python/test-containerizer])
   AC_CONFIG_FILES([src/python/setup.py])
   AC_CONFIG_FILES([src/python/cli/setup.py])
+  AC_CONFIG_FILES([src/python/executor/setup.py])
   AC_CONFIG_FILES([src/python/interface/setup.py])
   AC_CONFIG_FILES([src/python/native/ext_modules.py])
   AC_CONFIG_FILES([src/python/native/setup.py])
