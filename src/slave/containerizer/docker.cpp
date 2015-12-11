@@ -1048,6 +1048,16 @@ Future<bool> DockerContainerizerProcess::launch(
       }))
       .then(defer(self(), [=]() { return launchExecutorProcess(containerId); }))
       .then(defer(self(), [=](pid_t pid) {
+          // Call update to set CPU/CFS/mem quotas at launch.
+          // TODO(steveniemitz): Once the minimum docker version supported
+          // is >= 1.7 this can be changed to pass --cpu-period and --cpu-quota
+          // to the 'docker run' call in launchExecutorProcess.
+          return update(containerId, executorInfo.resources())
+            .then([=]() {
+                return Future<pid_t>(pid);
+            });
+      }))
+      .then(defer(self(), [=](pid_t pid) {
         return reapExecutor(containerId, pid);
       }));
   }
@@ -1073,6 +1083,16 @@ Future<bool> DockerContainerizerProcess::launch(
     }))
     .then(defer(self(), [=]() {
       return launchExecutorContainer(containerId, containerName);
+    }))
+    .then(defer(self(), [=](const Docker::Container& dockerContainer) {
+      // Call update to set CPU/CFS/mem quotas at launch.
+      // TODO(steveniemitz): Once the minimum docker version supported
+      // is >= 1.7 this can be changed to pass --cpu-period and --cpu-quota
+      // to the 'docker run' call in launchExecutorContainer.
+      return update(containerId, executorInfo.resources())
+        .then([=]() {
+          return Future<Docker::Container>(dockerContainer);
+        });
     }))
     .then(defer(self(), [=](const Docker::Container& dockerContainer) {
       return checkpointExecutor(containerId, dockerContainer);
@@ -1410,6 +1430,35 @@ Future<Nothing> DockerContainerizerProcess::__update(
     LOG(INFO) << "Updated 'cpu.shares' to " << shares
               << " at " << path::join(cpuHierarchy.get(), cpuCgroup.get())
               << " for container " << containerId;
+
+    // Set cfs quota if enabled.
+    if (flags.cgroups_enable_cfs) {
+      write = cgroups::cpu::cfs_period_us(
+          cpuHierarchy.get(),
+          cpuCgroup.get(),
+          CPU_CFS_PERIOD);
+
+      if (write.isError()) {
+        return Failure("Failed to update 'cpu.cfs_period_us': " +
+                       write.error());
+      }
+
+      Duration quota = std::max(CPU_CFS_PERIOD * cpuShares, MIN_CPU_CFS_QUOTA);
+
+      write = cgroups::cpu::cfs_quota_us(
+          cpuHierarchy.get(),
+          cpuCgroup.get(),
+          quota);
+
+      if (write.isError()) {
+        return Failure("Failed to update 'cpu.cfs_quota_us': " + write.error());
+      }
+
+      LOG(INFO) << "Updated 'cpu.cfs_period_us' to " << CPU_CFS_PERIOD
+                << " and 'cpu.cfs_quota_us' to " << quota
+                << " (cpus " << cpuShares << ")"
+                << " for container " << containerId;
+    }
   }
 
   // Now determine the cgroup for the 'memory' subsystem.
