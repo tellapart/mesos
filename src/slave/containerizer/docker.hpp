@@ -144,7 +144,8 @@ public:
 
   virtual process::Future<Nothing> update(
       const ContainerID& containerId,
-      const Resources& resources);
+      const Resources& resources,
+      bool force);
 
   virtual process::Future<ResourceStatistics> usage(
       const ContainerID& containerId);
