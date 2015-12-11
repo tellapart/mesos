@@ -694,7 +694,8 @@ Future<Nothing> DockerContainerizer::update(
       process.get(),
       &DockerContainerizerProcess::update,
       containerId,
-      resources);
+      resources,
+      false);
 }
 
 
@@ -1092,6 +1093,16 @@ Future<bool> DockerContainerizerProcess::launch(
       return launchExecutorContainer(containerId, containerName);
     }))
     .then(defer(self(), [=](const Docker::Container& dockerContainer) {
+      // Call update to set CPU/CFS/mem quotas at launch.
+      // TODO(steveniemitz): Once the minimum docker version supported
+      // is >= 1.7 this can be changed to pass --cpu-period and --cpu-quota
+      // to the 'docker run' call in launchExecutorContainer.
+      return update(containerId, executorInfo.resources(), true)
+        .then([=]() {
+          return Future<Docker::Container>(dockerContainer);
+        });
+    }))
+    .then(defer(self(), [=](const Docker::Container& dockerContainer) {
       return checkpointExecutor(containerId, dockerContainer);
     }))
     .then(defer(self(), [=](pid_t pid) {
@@ -1296,7 +1307,8 @@ Future<bool> DockerContainerizerProcess::reapExecutor(
 
 Future<Nothing> DockerContainerizerProcess::update(
     const ContainerID& containerId,
-    const Resources& _resources)
+    const Resources& _resources,
+    bool force)
 {
   if (!containers_.contains(containerId)) {
     LOG(WARNING) << "Ignoring updating unknown container: "
@@ -1312,7 +1324,7 @@ Future<Nothing> DockerContainerizerProcess::update(
     return Nothing();
   }
 
-  if (container->resources == _resources) {
+  if (container->resources == _resources && !force) {
     LOG(INFO) << "Ignoring updating container '" << containerId
               << "' with resources passed to update is identical to "
               << "existing resources";
@@ -1427,6 +1439,35 @@ Future<Nothing> DockerContainerizerProcess::__update(
     LOG(INFO) << "Updated 'cpu.shares' to " << shares
               << " at " << path::join(cpuHierarchy.get(), cpuCgroup.get())
               << " for container " << containerId;
+
+    // Set cfs quota if enabled.
+    if (flags.cgroups_enable_cfs) {
+      write = cgroups::cpu::cfs_period_us(
+          cpuHierarchy.get(),
+          cpuCgroup.get(),
+          CPU_CFS_PERIOD);
+
+      if (write.isError()) {
+        return Failure("Failed to update 'cpu.cfs_period_us': " +
+                       write.error());
+      }
+
+      Duration quota = std::max(CPU_CFS_PERIOD * cpuShares, MIN_CPU_CFS_QUOTA);
+
+      write = cgroups::cpu::cfs_quota_us(
+          cpuHierarchy.get(),
+          cpuCgroup.get(),
+          quota);
+
+      if (write.isError()) {
+        return Failure("Failed to update 'cpu.cfs_quota_us': " + write.error());
+      }
+
+      LOG(INFO) << "Updated 'cpu.cfs_period_us' to " << CPU_CFS_PERIOD
+                << " and 'cpu.cfs_quota_us' to " << quota
+                << " (cpus " << cpuShares << ")"
+                << " for container " << containerId;
+    }
   }
 
   // Now determine the cgroup for the 'memory' subsystem.
