@@ -398,6 +398,11 @@ public:
   // Returns the resource usage information for all executors.
   process::Future<ResourceUsage> usage();
 
+  void sendContainerizerStatusUpdate(
+    const FrameworkID& frameworkId,
+    const ExecutorID& executorId,
+    const StatusUpdate& statusUpdate);
+
 private:
   void _authenticate();
   void authenticationTimeout(process::Future<bool> future);

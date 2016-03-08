@@ -191,6 +191,11 @@ private:
   process::Future<pid_t> launchExecutorProcess(
       const ContainerID& containerId);
 
+  process::Future<Nothing> sendPullingUpdate(
+      const ExecutorInfo& executorInfo,
+      const SlaveID& slaveId,
+      const PID<Slave>& slavePid);
+
   process::Future<pid_t> checkpointExecutor(
       const ContainerID& containerId,
       const Docker::Container& dockerContainer);
