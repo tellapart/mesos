@@ -1077,6 +1077,8 @@ Future<bool> DockerContainerizerProcess::launch(
   // we want the executor to keep running when the slave container
   // dies.
   return container.get()->launch = fetch(containerId, slaveId)
+    .then(defer(self(), [=]() { return sendPullingUpdate(
+      executorInfo, slaveId, slavePid); }))
     .then(defer(self(), [=]() { return pull(containerId); }))
     .then(defer(self(), [=]() {
       return mountPersistentVolumes(containerId);
@@ -1102,6 +1104,32 @@ Future<bool> DockerContainerizerProcess::launch(
     }));
 }
 
+Future<Nothing> DockerContainerizerProcess::sendPullingUpdate(
+    const ExecutorInfo& executorInfo,
+    const SlaveID& slaveId,
+    const PID<Slave>& slavePid)
+{
+  StatusUpdate pullMessage = protobuf::createStatusUpdate(
+      executorInfo.framework_id(),
+      slaveId,
+      TaskID(),
+      TaskState::TASK_STARTING,
+      TaskStatus::SOURCE_SLAVE,
+      Option<UUID>(UUID::random()),
+      "Pulling docker image...",
+      None(),
+      executorInfo.executor_id(),
+      Option<bool>(),
+      Option<Labels>(),
+      Option<ContainerStatus>());
+  dispatch(
+      slavePid,
+      &Slave::sendContainerizerStatusUpdate,
+      executorInfo.framework_id(),
+      executorInfo.executor_id(),
+      pullMessage);
+  return Nothing();
+}
 
 Future<Docker::Container> DockerContainerizerProcess::launchExecutorContainer(
     const ContainerID& containerId,
