@@ -5270,6 +5270,38 @@ double Slave::_executor_directory_max_allowed_age_secs()
   return executorDirectoryMaxAllowedAge.secs();
 }
 
+void Slave::sendContainerizerStatusUpdate(
+    const FrameworkID& frameworkId,
+    const ExecutorID& executorId,
+    const StatusUpdate& message)
+{
+  Framework* framework = getFramework(frameworkId);
+  if (framework == NULL) {
+    LOG(WARNING) << "Framework " << frameworkId
+                 << " for executor '" << executorId
+                 << "' does not exist";
+    return;
+  }
+
+  CHECK(framework->state == Framework::RUNNING ||
+        framework->state == Framework::TERMINATING)
+  << framework->state;
+
+  Executor* executor = framework->getExecutor(executorId);
+  if (executor == NULL) {
+    LOG(WARNING) << "Executor '" << executorId
+                 << "' of framework " << frameworkId
+                 << " does not exist";
+    return;
+  }
+
+  foreach(const TaskInfo &taskInfo, executor->queuedTasks.values()) {
+    StatusUpdate taskStatusUpdate = StatusUpdate(message);
+    TaskStatus* status = taskStatusUpdate.mutable_status();
+    status->mutable_task_id()->MergeFrom(taskInfo.task_id());
+    statusUpdate(taskStatusUpdate, UPID());
+  }
+}
 
 void Slave::sendExecutorTerminatedStatusUpdate(
     const TaskID& taskId,

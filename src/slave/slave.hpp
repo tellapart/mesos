@@ -405,6 +405,11 @@ public:
       const ExecutorID& executorId,
       const ContainerID& containerId);
 
+  void sendContainerizerStatusUpdate(
+    const FrameworkID& frameworkId,
+    const ExecutorID& executorId,
+    const StatusUpdate& statusUpdate);
+
 private:
   void _authenticate();
   void authenticationTimeout(process::Future<bool> future);
