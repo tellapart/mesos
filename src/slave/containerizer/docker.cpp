@@ -1102,6 +1102,19 @@ Future<bool> DockerContainerizerProcess::launch(
       return mountPersistentVolumes(containerId);
     }))
     .then(defer(self(), [=]() {
+        if (executorInfo.has_command() && executorInfo.command().has_user()) {
+          return getRoleUid(executorInfo.command().user())
+            .then(defer(self(), [=](const std::string& roleUid) {
+              container.get()->environment["MESOS_COMMAND_UID"] =
+                strings::trim(roleUid);
+              return Nothing();
+            }));
+        }
+        else {
+          return Future<Nothing>(Nothing());
+        }
+    }))
+    .then(defer(self(), [=]() {
       return launchExecutorContainer(containerId, containerName);
     }))
     .then(defer(self(), [=](const Docker::Container& dockerContainer) {
@@ -1148,6 +1161,44 @@ Future<Nothing> DockerContainerizerProcess::sendPullingUpdate(
       pullMessage);
   return Nothing();
 }
+
+Future<std::string> DockerContainerizerProcess::getRoleUid(
+    const std::string& user)
+{
+  std::string cmd = "id -u " + user;
+  Try<Subprocess> s = subprocess(
+    cmd,
+    Subprocess::PATH("/dev/null"),
+    Subprocess::PIPE(),
+    Subprocess::PIPE());
+
+  if (s.isError()) {
+    return Failure("Failed to execute 'id': " + s.error());
+  }
+
+  return s.get().status()
+    .then(defer(self(), &Self::_getRoleUid, cmd, s.get()));
+}
+
+Future<std::string> DockerContainerizerProcess::_getRoleUid(
+    const std::string& cmd,
+    const Subprocess& s)
+{
+  const Option<int>& status = s.status().get();
+  if (status.isNone() || status.get() != 0) {
+    string msg = "Failed to execute '" + cmd + "': ";
+    if (status.isSome()) {
+      msg += WSTRINGIFY(status.get());
+    } else {
+      msg += "unknown exit status";
+    }
+    return Failure(msg);
+  }
+
+  CHECK_SOME(s.out());
+
+  return io::read(s.out().get());
+};
 
 Future<Docker::Container> DockerContainerizerProcess::launchExecutorContainer(
     const ContainerID& containerId,
