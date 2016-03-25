@@ -245,6 +245,12 @@ private:
 
   Try<ResourceStatistics> cgroupsStatistics(pid_t pid) const;
 
+  process::Future<std::string> getRoleUid(const std::string& user);
+
+  process::Future<std::string> _getRoleUid(
+    const std::string& cmd,
+    const Subprocess& s);
+
   // Call back for when the executor exits. This will trigger
   // container destroy.
   void reaped(const ContainerID& containerId);
