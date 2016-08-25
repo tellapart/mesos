@@ -513,6 +513,11 @@ mesos::internal::slave::Flags::Flags()
       "  }\n"
       "}");
 
+  add(&Flags::docker_config_path,
+      "docker_config_path",
+      "Some Path",
+      "~/.docker");
+
   add(&Flags::sandbox_directory,
       "sandbox_directory",
       "The absolute path for the directory in the container where the\n"

@@ -110,6 +110,7 @@ public:
   Duration docker_stop_timeout;
   bool docker_kill_orphans;
   std::string docker_socket;
+  std::string docker_config_path;
   Option<JSON::Object> docker_config;
 
 #ifdef WITH_NETWORK_ISOLATOR

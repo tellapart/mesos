@@ -142,6 +142,7 @@ Try<DockerContainerizer*> DockerContainerizer::create(
       flags.docker,
       flags.docker_socket,
       true,
+      flags.docker_config_path,
       flags.docker_config);
 
   if (create.isError()) {

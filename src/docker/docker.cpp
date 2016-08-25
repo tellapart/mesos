@@ -98,13 +98,14 @@ Try<Owned<Docker>> Docker::create(
     const string& path,
     const string& socket,
     bool validate,
+    const string& config_path,
     const Option<JSON::Object>& config)
 {
   if (!strings::startsWith(socket, "/")) {
     return Error("Invalid Docker socket path: " + socket);
   }
 
-  Owned<Docker> docker(new Docker(path, socket, config));
+  Owned<Docker> docker(new Docker(path, socket, config_path, config));
   if (!validate) {
     return docker;
   }
@@ -1071,7 +1072,7 @@ Future<Docker::Image> Docker::pull(
 
   if (force) {
     // Skip inspect and docker pull the image.
-    return Docker::__pull(*this, directory, image, path, socket, config);
+    return Docker::__pull(*this, directory, image, path, socket, config_path, config);
   }
 
   argv.push_back(path);
@@ -1113,6 +1114,7 @@ Future<Docker::Image> Docker::pull(
         dockerImage,
         path,
         socket,
+        config_path,
         config,
         output));
 }
@@ -1125,6 +1127,7 @@ Future<Docker::Image> Docker::_pull(
     const string& image,
     const string& path,
     const string& socket,
+    const string& config_path,
     const Option<JSON::Object>& config,
     Future<string> output)
 {
@@ -1136,7 +1139,7 @@ Future<Docker::Image> Docker::_pull(
 
   output.discard();
 
-  return Docker::__pull(docker, directory, image, path, socket, config);
+  return Docker::__pull(docker, directory, image, path, socket, config_path, config);
 }
 
 
@@ -1146,6 +1149,7 @@ Future<Docker::Image> Docker::__pull(
     const string& image,
     const string& path,
     const string& socket,
+    const string& config_path,
     const Option<JSON::Object>& config)
 {
   vector<string> argv;
@@ -1207,9 +1211,7 @@ Future<Docker::Image> Docker::__pull(
   // TODO(gilbert): Deprecate the fetching docker config file
   // specified as URI method on 0.30.0 release.
   map<string, string> environment = os::environment();
-  environment["HOME"] = home.isSome()
-    ? home.get()
-    : directory;
+  environment["HOME"] = home.isSome()? home.get(): config_path;
 
   Try<Subprocess> s_ = subprocess(
       path,

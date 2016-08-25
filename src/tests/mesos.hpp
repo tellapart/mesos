@@ -1367,6 +1367,7 @@ public:
   MockDocker(
       const std::string& path,
       const std::string& socket,
+      const std::string& config_path,
       const Option<JSON::Object>& config = None());
   virtual ~MockDocker();
 

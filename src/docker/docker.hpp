@@ -48,6 +48,7 @@ public:
       const std::string& path,
       const std::string& socket,
       bool validate = true,
+      const std::string& config_path="",
       const Option<JSON::Object>& config = None());
 
   virtual ~Docker() {}
@@ -172,9 +173,11 @@ protected:
   // Uses the specified path to the Docker CLI tool.
   Docker(const std::string& _path,
          const std::string& _socket,
+         const std::string& _config_path,
          const Option<JSON::Object>& _config)
        : path(_path),
          socket("unix://" + _socket),
+         config_path(_config_path),
          config(_config) {}
 
 private:
@@ -244,6 +247,7 @@ private:
       const std::string& image,
       const std::string& path,
       const std::string& socket,
+      const std::string& config_path,
       const Option<JSON::Object>& config,
       process::Future<std::string> output);
 
@@ -253,6 +257,7 @@ private:
       const std::string& image,
       const std::string& path,
       const std::string& socket,
+      const std::string& config_path,
       const Option<JSON::Object>& config);
 
   static process::Future<Image> ___pull(
@@ -271,6 +276,7 @@ private:
 
   const std::string path;
   const std::string socket;
+  const std::string config_path;
   const Option<JSON::Object> config;
 };
 
